@@ -19,6 +19,7 @@ void block_store_destroy(block_store_t *const bs)
         free(bs); //Frees the memory
     }
 }
+
 size_t block_store_allocate(block_store_t *const bs)
 {
     UNUSED(bs);
