@@ -11,6 +11,6 @@ include_directories(./include)
 add_library(libblock_store src/block_store.c)
 
 # make an executable
-add_executable(${PROJECT_NAME}_test test/tests.cpp src/block_store)
+add_executable(${PROJECT_NAME}_test test/tests.cpp)
 target_compile_definitions(${PROJECT_NAME}_test PRIVATE)
 target_link_libraries(${PROJECT_NAME}_test gtest pthread libblock_store)
