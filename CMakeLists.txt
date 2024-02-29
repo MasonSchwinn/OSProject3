@@ -8,9 +8,9 @@ include_directories(./include)
 
 # build a dynamic library called libblock_store.so
 # note that the prefix lib will be automatically added in the filename.
-add_library(libblock_store.so src/block_store.so)
+add_library(libblock_store src/block_store.c)
 
 # make an executable
-add_executable(${PROJECT_NAME}_test test/tests.cpp)
+add_executable(${PROJECT_NAME}_test test/tests.cpp src/block_store)
 target_compile_definitions(${PROJECT_NAME}_test PRIVATE)
-target_link_libraries(${PROJECT_NAME}_test gtest pthread block_store)
+target_link_libraries(${PROJECT_NAME}_test gtest pthread libblock_store)
