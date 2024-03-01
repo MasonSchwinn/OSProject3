@@ -23,7 +23,7 @@ block_store_t *block_store_create() {
     memset(bs->data, 0, BLOCK_STORE_NUM_BYTES);
 
     // Set the bitmap field starting at index BITMAP_START_BLOCK
-    size_t bitmap_start_block = BLOCK_SIZE_BITS / BLOCK_SIZE_BYTES; // Convert bits to bytes
+    size_t bitmap_start_block = BITMAP_START_BLOCK; // Use the constant directly
     uint8_t *bitmap = bs->data + (bitmap_start_block * BLOCK_SIZE_BYTES);
 
     // Overlay the bitmap on the blocks
@@ -31,7 +31,7 @@ block_store_t *block_store_create() {
 
     // Mark blocks used by the bitmap as allocated
     size_t i;
-    for (i = 0; i < BLOCK_STORE_AVAIL_BLOCKS; ++i) {
+    for (i = 0; i < BLOCK_STORE_NUM_BLOCKS; ++i) {
         if (!block_store_request(bs, i)) {
             // Allocation error, free memory and return NULL
             free(bs);
