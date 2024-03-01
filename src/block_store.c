@@ -12,6 +12,7 @@
 // Internal structure of the block store (opaque to users)
 struct block_store {
     uint8_t data[BLOCK_STORE_NUM_BYTES];
+    bitmap_t *fbm;
 };
 
 block_store_t *block_store_create() {
@@ -22,22 +23,37 @@ block_store_t *block_store_create() {
     // Initialize the block store to zeros
     memset(bs->data, 0, BLOCK_STORE_NUM_BYTES);
 
+    // Create and initialize the Free Block Map (FBM)
+    bitmap_t *fbm = bitmap_create(BITMAP_SIZE_BITS);
+    bs->fbm = fbm;
+    if (bs->fbm == NULL) {
+        free(bs);
+        return NULL;
+    }
+
     // Set the bitmap field starting at index BITMAP_START_BLOCK
-    size_t bitmap_start_block = BITMAP_START_BLOCK; // Use the constant directly
-    uint8_t *bitmap = bs->data + (bitmap_start_block * BLOCK_SIZE_BYTES);
+    size_t bitmap_start_block = BITMAP_START_BLOCK;
+    uint8_t *bitmap_data = bs->data + (bitmap_start_block * BLOCK_SIZE_BYTES);
+    bitmap_t *overlay_bitmap = bitmap_overlay(BITMAP_SIZE_BITS, bitmap_data);
+    if (overlay_bitmap == NULL) {
+        free(bs->fbm);
+        free(bs);
+        return NULL;
+    }
 
-    // Overlay the bitmap on the blocks
-    memset(bitmap, 0, BITMAP_SIZE_BYTES);
-
-    // Mark blocks used by the bitmap as allocated
+    // Mark blocks used by the FBM as allocated
     size_t i;
-    for (i = 0; i < BLOCK_STORE_NUM_BLOCKS; ++i) {
+    for (i = 0; i < BITMAP_NUM_BLOCKS; ++i) {
         if (!block_store_request(bs, i)) {
-            // Allocation error, free memory and return NULL
+            free(bs->fbm);
             free(bs);
+            bitmap_destroy(overlay_bitmap);
             return NULL;
         }
     }
+
+    // Cleanup the allocated memory for overlay_bitmap as it is now part of the block store
+    bitmap_destroy(overlay_bitmap);
 
     return bs;
 }
