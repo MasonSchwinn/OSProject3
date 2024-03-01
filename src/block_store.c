@@ -61,6 +61,7 @@ block_store_t *block_store_create() {
 void block_store_destroy(block_store_t *const bs)
 {
     if(bs != NULL){ //Checks to see if the pointer is not NULL
+        free(bs->fbm);
         free(bs); //Frees the memory
     }
 }
