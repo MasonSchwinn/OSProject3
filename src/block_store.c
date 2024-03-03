@@ -68,8 +68,16 @@ void block_store_destroy(block_store_t *const bs)
 
 size_t block_store_allocate(block_store_t *const bs)
 {
-    UNUSED(bs);
-    return 0;
+    if (bs == NULL){ //Error check
+        return SIZE_MAX;
+    }
+
+    size_t index = bitmap_ffz(bs->fbm); //Finds the first zero
+    if(index != SIZE_MAX){ //Checks to see if the first zero was found
+        bitmap_set(bs->fbm,index); //Sets the bitmap
+    }
+
+    return index; //returns the index
 }
 
 bool block_store_request(block_store_t *const bs, size_t block_index) {
