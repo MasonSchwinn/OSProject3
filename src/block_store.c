@@ -55,29 +55,31 @@ block_store_t *block_store_create() {
     // Cleanup the allocated memory for overlay_bitmap as it is now part of the block store
     bitmap_destroy(overlay_bitmap);
 
+    // Return the initialized block store
     return bs;
 }
 
-void block_store_destroy(block_store_t *const bs)
-{
+void block_store_destroy(block_store_t *const bs) {
     if(bs != NULL){ //Checks to see if the pointer is not NULL
         free(bs->fbm);
         free(bs); //Frees the memory
     }
 }
 
-size_t block_store_allocate(block_store_t *const bs)
-{
-    if (bs == NULL){ //Error check
+size_t block_store_allocate(block_store_t *const bs) {
+    if (bs == NULL) {
         return SIZE_MAX;
     }
 
-    size_t index = bitmap_ffz(bs->fbm); //Finds the first zero
-    if(index != SIZE_MAX){ //Checks to see if the first zero was found
-        bitmap_set(bs->fbm,index); //Sets the bitmap
-    }
+    size_t index = bitmap_ffz(bs->fbm);
 
-    return index; //returns the index
+    if (index != SIZE_MAX) { // Check if a zero bit was found
+        bitmap_set(bs->fbm, index);
+        return index;
+    }
+    else { // No zero bit found
+        return SIZE_MAX;
+    }
 }
 
 bool block_store_request(block_store_t *const bs, size_t block_index) {
@@ -105,7 +107,6 @@ bool block_store_request(block_store_t *const bs, size_t block_index) {
     
     return true;
 }
-
 
 void block_store_release(block_store_t *const bs, const size_t block_id) {
     // Null check
