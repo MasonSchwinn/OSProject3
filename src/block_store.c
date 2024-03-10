@@ -81,9 +81,19 @@ size_t block_store_allocate(block_store_t *const bs)
 }
 
 bool block_store_request(block_store_t *const bs, size_t block_index) {
+    // Null check
+    if(!bs) {
+        return false;
+    }
+
     // Calculate the byte and bit offset for the block in the bitmap
     size_t byte_offset = block_index / 8;
     size_t bit_offset = block_index % 8;
+    
+    // Make sure the given ID is within the bounds of the bitmap
+    if(block_index > BLOCK_STORE_NUM_BLOCKS) {
+        return false;
+    }
 
     // Check if the block is already allocated
     if ((bs->data[byte_offset] & (1 << bit_offset)) != 0) {
@@ -96,10 +106,20 @@ bool block_store_request(block_store_t *const bs, size_t block_index) {
     return true;
 }
 
-void block_store_release(block_store_t *const bs, const size_t block_id)
-{
-    UNUSED(bs);
-    UNUSED(block_id);
+
+void block_store_release(block_store_t *const bs, const size_t block_id) {
+    // Null check
+    if(!bs) {
+        return ;
+    }
+    
+    // Make sure the given ID is within the bounds of the bitmap
+    if(block_id > BLOCK_STORE_NUM_BLOCKS) {
+        return ;
+    }
+
+    // Do not need to check if it is set or not as the result is the same anyways.
+    bitmap_reset(bs->fbm, block_id);
 }
 
 size_t block_store_get_used_blocks(const block_store_t *const bs)
