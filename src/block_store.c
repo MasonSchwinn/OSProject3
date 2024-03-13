@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
 #include "bitmap.h"
 #include "block_store.h"
 // include more if you need
@@ -148,31 +150,100 @@ size_t block_store_get_total_blocks() {
     return BLOCK_STORE_NUM_BLOCKS; //retuns the number of blocks
 }
 
-size_t block_store_read(const block_store_t *const bs, const size_t block_id, void *buffer)
-{
-    UNUSED(bs);
-    UNUSED(block_id);
-    UNUSED(buffer);
-    return 0;
+size_t block_store_read(const block_store_t *const bs, const size_t block_id, void *buffer) {
+    if(!bs) {
+        return 0;
+    }
+
+    // Null check for buffer.
+    if(!buffer) {
+        return 0;
+    }
+
+    // Is there another way we should do this that can check the size of the buffer?
+    // Or do we assume the buffer is sized to at least fit a block?
+    memcpy(buffer, &(bs->data[block_id]), BLOCK_SIZE_BYTES);
+
+    return BLOCK_SIZE_BYTES;
 }
 
-size_t block_store_write(block_store_t *const bs, const size_t block_id, const void *buffer)
-{
-    UNUSED(bs);
-    UNUSED(block_id);
-    UNUSED(buffer);
-    return 0;
+size_t block_store_write(block_store_t *const bs, const size_t block_id, const void *buffer) {
+    if(!bs) {
+        return 0;
+    }
+
+    // Null check for buffer.
+    if(!buffer) {
+        return 0;
+    }
+
+    // Is there another way we should do this that can check the size of the buffer?
+    // Or do we assume the buffer is sized to at least fit a block?
+    memcpy(&(bs->data[block_id]), buffer, BLOCK_SIZE_BYTES);
+
+    return BLOCK_SIZE_BYTES;
 }
 
-block_store_t *block_store_deserialize(const char *const filename)
-{
-    UNUSED(filename);
-    return NULL;
+block_store_t *block_store_deserialize(const char *const filename) {
+    // Check filename is not null
+    if(!filename) { 
+        return NULL;
+    }
+
+    // Create new block store, if failed return null.
+    block_store_t *bs = NULL;
+    bs = block_store_create();
+    if(!bs) {
+        return NULL;
+    }
+    
+    // Open the file and store file descriptor.
+    int fle = open(filename, O_RDONLY);
+    if(fle == -1) {
+        // Failed to open.
+        return NULL;
+    }
+
+    // Read the data, block by block.
+    // If that block is empty, do nothing
+    // If that block is not empty, insert it into the bitmap.
+
+    // Close the file.
+    // Likely should be doing something else as well if we fail to close....
+    if(close(fle) == -1) {
+        return 0;
+    }
+
+    return bs;
 }
 
-size_t block_store_serialize(const block_store_t *const bs, const char *const filename)
-{
-    UNUSED(bs);
-    UNUSED(filename);
-    return 0;
+size_t block_store_serialize(const block_store_t *const bs, const char *const filename) {
+    // Null Check for data and filename
+    if(!bs) {
+        return 0;
+    }
+
+    if(!filename) { 
+        return 0;
+    }
+    // Delete the old file if it exists.
+    remove(filename);
+    
+    // Open the file and store file descriptor.
+    int fle = open(filename, O_CREAT | O_WRONLY);
+    if(fle == -1) {
+        // Failed to open.
+        return 0;
+    }
+
+    // Write the data. Returns number of bytes written. 
+    size_t num_blocks_written = write(fle, bs->data, BLOCK_STORE_NUM_BLOCKS * BLOCK_SIZE_BYTES);
+
+    // Close the file.
+    // Likely should be doing something else as well if we fail to close....
+    if(close(fle) == -1) {
+        return 0;
+    }
+
+    return num_blocks_written;
 }
