@@ -44,7 +44,7 @@ block_store_t *block_store_create() {
     // Mark blocks used by the FBM as allocated
     size_t i;
     for (i = 0; i < BITMAP_NUM_BLOCKS; ++i) {
-        if (!block_store_request(bs, i)) {
+        if (!block_store_request(bs, i + BITMAP_START_BLOCK)) {
             free(bs->fbm);
             free(bs);
             bitmap_destroy(overlay_bitmap);
@@ -71,13 +71,13 @@ size_t block_store_allocate(block_store_t *const bs) {
         return SIZE_MAX;
     }
 
+    // Find the zero.
     size_t index = bitmap_ffz(bs->fbm);
 
     if (index != SIZE_MAX) { // Check if a zero bit was found
         bitmap_set(bs->fbm, index);
         return index;
-    }
-    else { // No zero bit found
+    } else { // No zero bit found
         return SIZE_MAX;
     }
 }
@@ -87,10 +87,6 @@ bool block_store_request(block_store_t *const bs, size_t block_index) {
     if(!bs) {
         return false;
     }
-
-    // Calculate the byte and bit offset for the block in the bitmap
-    size_t byte_offset = block_index / 8;
-    size_t bit_offset = block_index % 8;
     
     // Make sure the given ID is within the bounds of the bitmap
     if(block_index > BLOCK_STORE_NUM_BLOCKS) {
@@ -98,12 +94,17 @@ bool block_store_request(block_store_t *const bs, size_t block_index) {
     }
 
     // Check if the block is already allocated
-    if ((bs->data[byte_offset] & (1 << bit_offset)) != 0) {
+    if(bitmap_test(bs->fbm, block_index)) {
         return false;
     }
 
     // Mark the block as allocated in the bitmap
-    bs->data[byte_offset] |= (1 << bit_offset);
+    bitmap_set(bs->fbm, block_index);
+
+    // Ensure it was allocated
+    if(!bitmap_test(bs->fbm, block_index)) {
+        return false;
+    }
     
     return true;
 }
@@ -123,20 +124,27 @@ void block_store_release(block_store_t *const bs, const size_t block_id) {
     bitmap_reset(bs->fbm, block_id);
 }
 
-size_t block_store_get_used_blocks(const block_store_t *const bs)
-{
-    UNUSED(bs);
-    return 0;
+
+size_t block_store_get_used_blocks(const block_store_t *const bs) {
+    // Null check.
+    if(!bs) {
+        return SIZE_MAX;
+    }
+
+    // Get number of used blocks
+    return bitmap_total_set(bs->fbm);
 }
 
-size_t block_store_get_free_blocks(const block_store_t *const bs)
-{
-    UNUSED(bs);
-    return 0;
+size_t block_store_get_free_blocks(const block_store_t *const bs) {
+    // Null check.
+    if(!bs) {
+        return SIZE_MAX;
+    }
+
+    return BLOCK_STORE_NUM_BLOCKS - block_store_get_used_blocks(bs);
 }
 
-size_t block_store_get_total_blocks()
-{
+size_t block_store_get_total_blocks() {
     return BLOCK_STORE_NUM_BLOCKS; //retuns the number of blocks
 }
 
